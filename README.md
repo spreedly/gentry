@@ -10,7 +10,7 @@ Use Gentry to run tasks with a configurable retry and backoff period.
 
     ```elixir
     def deps do
-      [{:gentry, git: "git@github.com:spreedly/gentry.git", branch: "master"}]
+      [{:gentry, git: "https://github.com/spreedly/gentry.git", branch: "master"}]
     end
     ```
 
