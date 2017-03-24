@@ -7,3 +7,7 @@ use Mix.Config
 #   format: "$date $time $metadata[$level] $message\n",
 #   metadata: [:module]
 config :logger, backends: []
+
+config :gentry,
+  retries: 5,
+  retry_backoff: 100

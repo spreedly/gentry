@@ -83,6 +83,6 @@ defmodule Gentry.Worker do
   end
   
   defp retry_backoff do
-    Application.get_env(:gentry, :retry_backoff, 5)
+    Application.get_env(:gentry, :retry_backoff, 5_000)
   end
 end

@@ -39,7 +39,7 @@ Use Gentry to run tasks with a configurable retry and backoff period.
     # config.exs
     config :gentry,
       retries: 5,
-      retry_delay: 5_000
+      retry_backoff: 5_000
     ```
 
 ## Usage
