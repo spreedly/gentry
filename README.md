@@ -2,7 +2,11 @@
 
 **Because failures are a royal pain.**
 
-Use Gentry to run tasks with a configurable retry and backoff period.
+Use Gentry to run tasks with a configurable retry and backoff period. The computed backoff is exponential:
+
+```elixir
+retry_backoff() * pow(2, retries() - retries_remaining())
+```
 
 ## Installation
 

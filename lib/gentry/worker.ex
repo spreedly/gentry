@@ -53,6 +53,11 @@ defmodule Gentry.Worker do
     {:noreply, state}
   end
 
+  def compute_delay(retries_remaining) do
+    retry_backoff() * :math.pow(2, retries() - retries_remaining)
+    |> round
+  end
+
   defp spawn_task(state) do
     {pid, _ref} = spawn_monitor(state.task_function)
     {:noreply, %State{state | spawned_pid: pid}}
@@ -62,20 +67,19 @@ defmodule Gentry.Worker do
     if state.retries_remaining > 0 do
       send(state.runner_pid, {:gentry, self(), :retry, state.retries_remaining})
       Logger.debug "Retrying with #{state.retries_remaining} retries remaining"
-      retry()
-      {
-        :noreply,
-        %State{state | retries_remaining: (state.retries_remaining - 1)},
-        :infinity
-      }
+      retry(state.retries_remaining)
+      
+      {:noreply,
+       %State{state | retries_remaining: (state.retries_remaining - 1)},
+       :infinity}
     else
       send(state.runner_pid, {:gentry, self(), :error, error})
       {:stop, {:shutdown, :max_retries_exceeded}, state}
     end
   end
 
-  defp retry do
-    Process.send_after(self(), :execute_function, retry_backoff())
+  defp retry(retries_remaining) do
+    Process.send_after(self(), :execute_function, compute_delay(retries_remaining))
   end
   
   defp retries do

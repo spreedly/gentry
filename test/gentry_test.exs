@@ -1,4 +1,4 @@
-defmodule Gentry.Test.WorkerTest do
+defmodule Gentry.Test.GentryTest do
   use ExUnit.Case
   doctest Gentry
 
