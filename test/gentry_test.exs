@@ -24,11 +24,20 @@ defmodule Gentry.Test.GentryTest do
         0 ->
           Logger.debug "Finished"
           send(parent_pid, {:message, parent_pid})
-          {:reply, :ok, failures}
+          send(self(), {:stop})
+          {:reply, :task_ok, failures}
         _ ->
           Logger.debug "Failures to go: #{failures}"
-          {:reply, :error, %{state | failures: (failures - 1)}}
+          {:reply, :task_error, %{state | failures: (failures - 1)}}
       end
+    end
+    def handle_call({:stop}, _from, state) do
+      Logger.debug "Stopping"
+      {:stop, :normal, state}
+    end
+    def handle_call(something, _from, state) do
+      Logger.debug "Handling call with #{inspect something}"
+      {:noreply, state}
     end
   end
 
@@ -41,8 +50,8 @@ defmodule Gentry.Test.GentryTest do
     me = self()
 
     {:ok, pid} = Server.start_link(0, me)
-    assert {:ok, :normal} == Gentry.run_task(fn ->
-      :ok = Server.run(pid)
+    assert {:ok, :task_ok} == Gentry.run_task(fn ->
+      :task_ok = Server.run(pid)
     end)
 
     assert_received {:message, ^me}
@@ -52,8 +61,8 @@ defmodule Gentry.Test.GentryTest do
     me = self()
 
     {:ok, pid} = Server.start_link(1, me)
-    assert {:ok, :normal} == Gentry.run_task(fn ->
-      :ok = Server.run(pid)
+    assert {:ok, :task_ok} == Gentry.run_task(fn ->
+      :task_ok = Server.run(pid)
     end)
 
     assert_received {:message, ^me}
@@ -63,8 +72,8 @@ defmodule Gentry.Test.GentryTest do
     me = self()
 
     {:ok, pid} = Server.start_link(5, me)
-    assert {:ok, :normal} == Gentry.run_task(fn ->
-      :ok = Server.run(pid)
+    assert {:ok, :task_ok} == Gentry.run_task(fn ->
+      :task_ok = Server.run(pid)
     end)
 
     assert_received {:message, ^me}
@@ -74,10 +83,11 @@ defmodule Gentry.Test.GentryTest do
     me = self()
 
     {:ok, pid} = Server.start_link(6, me)
-    {:error, _error} = Gentry.run_task(fn ->
+    {:error, _task_error} = Gentry.run_task(fn ->
       :ok = Server.run(pid)
     end)
 
     refute_received {:message, ^me}
   end
+
 end

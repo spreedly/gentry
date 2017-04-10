@@ -2,11 +2,34 @@
 
 **Because failures are a royal pain.**
 
-Use Gentry to run tasks with a configurable retry and backoff period. The computed backoff is exponential:
+Use Gentry to run tasks with a configurable retry and backoff period.
+
+Gentry will try each task, given as a funcion. If it fails, Gentry will
+retry the task `retries` number of times. The defalt value for `retries`
+is `5`.
+
+Before running the task after it fails, Gentry will use the configured
+`retry_backoff` value as milliseconds. The default value for
+`retry_backoff` is `5000`.
+
+The computed backoff for each retry is exponentially doubled:
 
 ```elixir
-retry_backoff() * pow(2, retries() - retries_remaining())
+# something like this ...
+retry_backoff() * :math.pow(2, retries() - retries_remaining())
 ```
+
+So the time between the first _try_ and the first _retry_ is:
+
+```
+   5000 * :math.pow(2, 5 - 5)
+=> 5000 * :math.pow(2, 0)
+=> 5000 * 1
+=> 5000
+```
+
+The time between the first retry and the second retry is twice the
+`retry_backoff` time, etc.
 
 ## Installation
 
@@ -43,7 +66,7 @@ retry_backoff() * pow(2, retries() - retries_remaining())
     # config.exs
     config :gentry,
       retries: 5,
-      retry_backoff: 5_000
+      retry_backoff: 5_000 # milliseconds
     ```
 
 ## Usage
@@ -54,7 +77,7 @@ Use the `Gentry` module for easy, synchronous calls with retries.
 
 ```elixir
 case Gentry.run_task(fn -> write_to_database(changeset) end) do
-  {:ok, :normal} ->
+  {:ok, _result} ->
     Logger.debug "Successfully processed changeset: #{inspect changeset}"
     count(%{"partition" => message.partition}, @stat_count_processed)
   {:error, error} ->
@@ -67,21 +90,32 @@ end
 From within a `GenServer`, start a new task by running:
 
 ```elixir
-{:ok, pid} = Gentry.Supervisor.start_worker(f, self())
+{:ok, pid} = Gentry.WorkerSupervisor.start_worker(f, self())
 ```
 
 Then handle the result:
 
 ```elixir
-def handle_info({:gentry, pid, :ok, :normal}, state) do
-  Logger.debug "Received success from child: #{inspect pid}"
+def handle_info({:gentry, pid, :ok, result}, state) do
+  Logger.debug "Received success from child: #{inspect pid} with result: #{inspect result}"
   state
 end
 def handle_info({:gentry, pid, :error, error}, state) do
   Logger.debug "Received error from child: #{inspect pid}"
 end
-def handle_info({:gentry, ^pid, :retry, remaining}, state) do
-  Logger.debug "Received retry from child: #{inspect pid}, #{remaining} tries remaining"
+def handle_info({:gentry, pid, :retry, remaining}, state) do
+  Logger.debug "Received retry notification from child: #{inspect pid}, #{remaining} tries remaining"
   state
 end
 ```
+
+## Limitations
+
+### Backoff
+
+Gentry only supports exponential doubling for its backoff algorithm.
+
+### Naming
+
+Gentry uses a fixed naming scheme, so multiple instances of the Gentry
+supervisors is not possible.

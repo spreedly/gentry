@@ -1,9 +1,11 @@
 defmodule Gentry.Worker do
   @moduledoc """
-  The worker is responsible for coordinating the retries of the task given in
-  the form of a function called `task_function`.
+  The worker is responsible for actually running and coordinating the
+  retries of the task given in the form of a function called
+  `task_function`.
   
-  The task is spawened and monitored by the worker using `spawn_monitor`.
+  The task is spawened and monitored by the worker using
+  `Task.Supervisor.async_nolink`
 
   The number of retries and the backoff between retries are taken from
   the configuration.
@@ -19,9 +21,11 @@ defmodule Gentry.Worker do
     - `task_function` is the whole purpose: the task we're trying to run
     - `runner_pid` is the
     process that requested the task to be run and will get the reply
-    - `spawned_pid` is the spawned task that's executing `task_function`
+    - `task` is the spawned task that's executing `task_function`
     """
-    defstruct retries_remaining: nil, task_function: nil, runner_pid: nil, spawned_pid: nil
+    defstruct retries_remaining: nil,
+        task_function: nil, runner_pid: nil,
+        task: nil
   end
 
   def start_link(task_function, runner_pid, ops \\ []) do
@@ -29,27 +33,41 @@ defmodule Gentry.Worker do
   end
 
   def init([task_function, runner_pid]) do
-    send(self(), :execute_function)
-    initial_state = %State{retries_remaining: retries(), task_function: task_function, runner_pid: runner_pid}
+    initial_state = %State{retries_remaining: retries(),
+                          task_function: task_function,
+                          runner_pid: runner_pid}
     Logger.debug "Worker #{inspect self()} is starting with inital state: #{inspect initial_state}"
+    send(self(), {:execute_function})
     {:ok, initial_state}
   end
 
-  def handle_info(:execute_function, state) do
+  ## Internal
+
+  def handle_info({:execute_function}, state) do
     spawn_task(state)
   end
-  def handle_info({:DOWN, _ref, :process, pid, :normal}, state) do
-    Logger.debug "Normal shutdown of #{inspect pid}"
-    send(state.runner_pid, {:gentry, self(), :ok, :normal})
+  # Receive the result of the task
+  def handle_info({ref, result}, %{task: %{ref: task_ref}} = state)
+      when ref == task_ref do
+    Logger.debug "Received completion from task: #{inspect result}"
+    # Send the reply
+    send(state.runner_pid, {:gentry, self(), :ok, result})
+    {:noreply, state}
+  end
+  # Shutdown of spawned task
+  def handle_info({:DOWN, ref, :process, _pid, :normal}, %{task: %{ref: task_ref}} = state)
+      when ref == task_ref do
+    Logger.debug "Normal shutdown of #{inspect ref}"
     {:stop, :normal, state}
   end
-  def handle_info({:DOWN, _ref, :process, pid, error}, state) do
-    Logger.debug "Abnormal shutdown of #{inspect pid}, error: #{inspect error}, retries remaining: #{state.retries_remaining}"
+  def handle_info({:DOWN, ref, :process, _pid, error}, %{task: %{ref: task_ref}} = state)
+      when ref == task_ref do
+    Logger.warn "Abnormal shutdown of #{inspect ref}, error: #{inspect error}, retries remaining: #{state.retries_remaining}"
     handle_failure(state, error)
   end
   def handle_info(msg, state) do
     # catch all
-    Logger.debug "Unexpected message: #{inspect msg}"
+    Logger.warn "Unexpected message: #{inspect msg} with state: #{inspect state}"
     {:noreply, state}
   end
 
@@ -59,8 +77,10 @@ defmodule Gentry.Worker do
   end
 
   defp spawn_task(state) do
-    {pid, _ref} = spawn_monitor(state.task_function)
-    {:noreply, %State{state | spawned_pid: pid}}
+    task = Task.Supervisor.async_nolink(:task_supervisor, state.task_function)
+    new_state = state
+      |> Map.put(:task, task)
+    {:noreply, new_state}
   end
 
   defp handle_failure(state, error) do
@@ -79,7 +99,7 @@ defmodule Gentry.Worker do
   end
 
   defp retry(retries_remaining) do
-    Process.send_after(self(), :execute_function, compute_delay(retries_remaining))
+    Process.send_after(self(), {:execute_function}, compute_delay(retries_remaining))
   end
   
   defp retries do
