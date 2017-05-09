@@ -52,6 +52,7 @@ defmodule Gentry.Test.GentryTest do
     {:ok, pid} = Server.start_link(0, me)
     assert {:ok, :task_ok} == Gentry.run_task(fn ->
       :task_ok = Server.run(pid)
+      {:ok, :task_ok}
     end)
 
     assert_received {:message, ^me}
@@ -63,6 +64,7 @@ defmodule Gentry.Test.GentryTest do
     {:ok, pid} = Server.start_link(1, me)
     assert {:ok, :task_ok} == Gentry.run_task(fn ->
       :task_ok = Server.run(pid)
+      {:ok, :task_ok}
     end)
 
     assert_received {:message, ^me}
@@ -74,6 +76,7 @@ defmodule Gentry.Test.GentryTest do
     {:ok, pid} = Server.start_link(5, me)
     assert {:ok, :task_ok} == Gentry.run_task(fn ->
       :task_ok = Server.run(pid)
+      {:ok, :task_ok}
     end)
 
     assert_received {:message, ^me}
@@ -85,6 +88,16 @@ defmodule Gentry.Test.GentryTest do
     {:ok, pid} = Server.start_link(6, me)
     {:error, _task_error} = Gentry.run_task(fn ->
       :ok = Server.run(pid)
+    end)
+
+    refute_received {:message, ^me}
+  end
+
+  test "run task with return failure" do
+    me = self()
+
+    {:error, {:error, :nope}} = Gentry.run_task(fn ->
+      {:error, :nope}
     end)
 
     refute_received {:message, ^me}

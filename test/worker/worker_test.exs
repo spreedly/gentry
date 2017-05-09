@@ -4,10 +4,6 @@ defmodule Gentry.Test.WorkerTest do
 
   alias Gentry.Worker
 
-  setup do
-    :ok
-  end
-
   test "compute retry delay" do
     Application.put_env(:gentry, :retry_backoff, 5_000)
 

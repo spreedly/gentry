@@ -33,7 +33,7 @@ The time between the first retry and the second retry is twice the
 
 ## Installation
 
-  1. Add `gentry` to your list of dependencies in `mix.exs`:
+1. Add `gentry` to your list of dependencies in `mix.exs`:
 
     ```elixir
     def deps do
@@ -41,7 +41,7 @@ The time between the first retry and the second retry is twice the
     end
     ```
 
-  2. If you're using Elixir 1.3, ensure `gentry` is started with your application:
+2. If you're using Elixir 1.3, ensure `gentry` is started with your application:
 
     ```elixir
     def application do
@@ -49,7 +49,7 @@ The time between the first retry and the second retry is twice the
     end
     ```
 
-  3. Configure the Gentry supervisor:
+3. Configure the Gentry supervisor:
 
     ```elixir
     # ...
@@ -108,6 +108,13 @@ def handle_info({:gentry, pid, :retry, remaining}, state) do
   state
 end
 ```
+
+### Failures
+
+For Gentry, a failure is either:
+
+* A task that has exited abormally (see the description [here](https://hexdocs.pm/elixir/Task.Supervisor.html#async_nolink/2))
+* A task that returns a value not matching either `:ok` or `{:ok, _}`
 
 ## Limitations
 

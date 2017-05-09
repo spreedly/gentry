@@ -8,10 +8,13 @@ defmodule Gentry do
   require Logger
 
   @doc """
-  Run the task (function) in an isolated process. The return values are:
-  `{:ok, result}` - The task ran successfully and the result of the function is
-    available in `result`
-  `{:error, error}` - The task failed with reason, `error`
+  Run the task (function) in an isolated process.
+
+  The return of the task is interrogated for success or failure.
+
+      * `:ok` The task was successful. Gentry will return `{:ok, :ok}`.
+      * `{:ok, result}` The task was successful. Gentry will return `{:ok, result}`.
+      * `error` The task was unsuccessful. Gentry will retry the task until it succeeds or the retry count is exhausted. In the latter case, `{:error, error}` is returned.
 
   The task will be retried and respond if successful or if the number of
   retries has been exhausted.
