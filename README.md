@@ -98,14 +98,15 @@ Then handle the result:
 ```elixir
 def handle_info({:gentry, pid, :ok, result}, state) do
   Logger.debug "Received success from child: #{inspect pid} with result: #{inspect result}"
-  state
+  {:noreply, state}
 end
 def handle_info({:gentry, pid, :error, error}, state) do
   Logger.debug "Received error from child: #{inspect pid}"
+  {:noreply, state}
 end
 def handle_info({:gentry, pid, :retry, remaining}, state) do
   Logger.debug "Received retry notification from child: #{inspect pid}, #{remaining} tries remaining"
-  state
+  {:noreply, state}
 end
 ```
 
