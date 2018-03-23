@@ -7,7 +7,7 @@ defmodule Gentry.WorkerSupervisor do
   Use this if an async interface is needed. Use the `Gentry` module as
   a guide to what messages to expect.
   """
-  
+
   use Supervisor
 
   def start_link do
@@ -30,6 +30,7 @@ defmodule Gentry.WorkerSupervisor do
     children = [
       worker(Gentry.Worker, [], restart: :transient)
     ]
+
     supervise(children, strategy: :simple_one_for_one)
   end
 end

@@ -5,9 +5,9 @@ defmodule Gentry.Supervisor do
   Hook this up as a supervisor in Application or whereever appropriate for your
   app.
 
-  Use `Gentry.TaskRunner` for a convenient synchronous interface.
+  Use `Gentry` for a convenient synchronous interface.
   """
-  
+
   use Supervisor
 
   def start_link do
@@ -19,6 +19,7 @@ defmodule Gentry.Supervisor do
       supervisor(Gentry.WorkerSupervisor, []),
       supervisor(Task.Supervisor, [[name: :task_supervisor]])
     ]
+
     supervise(children, strategy: :one_for_one)
   end
 end

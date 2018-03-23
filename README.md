@@ -37,7 +37,7 @@ The time between the first retry and the second retry is twice the
 
     ```elixir
     def deps do
-      [{:gentry, git: "https://github.com/spreedly/gentry.git", branch: "master"}]
+      [{:gentry, "~> 0.1"}]
     end
     ```
 
@@ -126,4 +126,5 @@ Gentry only supports exponential doubling for its backoff algorithm.
 ### Naming
 
 Gentry uses a fixed naming scheme, so multiple instances of the Gentry
-supervisors is not possible.
+supervisor is not possible. However, any number of concurrent tasks may
+be run.

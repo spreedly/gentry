@@ -14,5 +14,4 @@ defmodule Gentry.Test.WorkerTest do
     assert 80_000 == Worker.compute_delay(1)
     assert 160_000 == Worker.compute_delay(0)
   end
-
 end
