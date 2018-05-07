@@ -4,7 +4,7 @@
 
 Use Gentry to run tasks with a configurable retry and backoff period.
 
-Gentry will try each task, given as a funcion. If it fails, Gentry will
+Gentry will try each task, given as a function. If it fails, Gentry will
 retry the task `retries` number of times. The defalt value for `retries`
 is `5`.
 
@@ -79,7 +79,6 @@ Use the `Gentry` module for easy, synchronous calls with retries.
 case Gentry.run_task(fn -> write_to_database(changeset) end) do
   {:ok, _result} ->
     Logger.debug "Successfully processed changeset: #{inspect changeset}"
-    count(%{"partition" => message.partition}, @stat_count_processed)
   {:error, error} ->
     Logger.debug "Failed to process changeset: #{inspect changeset}, because: #{inspect error}"
 end
